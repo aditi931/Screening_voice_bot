@@ -1,88 +1,60 @@
 import streamlit as st
-import streamlit.components.v1 as components
-from agent import agent_response
+import speech_recognition as sr
+import sounddevice as sd
+import wavio
+import tempfile
+import pyttsx3
+from agent import agent_response  # your LLM/RAG agent
 
-st.set_page_config(page_title="Aditi Voice Bot", layout="wide")
-st.title("🎙️ Aditi Sharma’s Voice Bot ")
+st.set_page_config(page_title="🎙️ Aditi Voice Bot", layout="wide")
+st.title("🎙️ Aditi Sharma’s Voice Bot")
 
-# --- JS for voice recognition + auto submit + TTS ---
-voice_js = """
-<script>
-async function startConversation() {
-    const status = document.getElementById('status');
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window')) {
-        status.innerText = 'Speech recognition not supported in this browser.';
-        return;
-    }
+# --- Record voice ---
+duration = st.number_input("Recording duration (seconds)", min_value=2, max_value=15, value=5)
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+if st.button("🎤 Speak Now"):
+    st.info("Listening...")
 
-    const speak = (text) => {
-        if (!('speechSynthesis' in window)) return;
-        const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = 'en-IN';
-        const voices = window.speechSynthesis.getVoices();
-        const indianFemale = voices.find(v => v.lang.includes('en-IN') && v.name.toLowerCase().includes('female'));
-        if (indianFemale) msg.voice = indianFemale;
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(msg);
-    };
+    fs = 44100
+    recording = sd.rec(int(duration * fs), samplerate=fs, channels=1)
+    sd.wait()
 
-    recognition.onresult = async (event) => {
-        const text = event.results[0][0].transcript;
-        status.innerText = 'Heard: ' + text;
+    # Save to temp WAV
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+        wavio.write(f.name, recording, fs, sampwidth=2)
+        audio_file = f.name
 
-        // Use Streamlit events: find the hidden input by id
-        const hidden_input = document.getElementById('voice_input_hidden');
-        hidden_input.value = text;
+    # --- Transcribe speech ---
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(audio_file) as source:
+        audio_data = recognizer.record(source)
+        try:
+            query = recognizer.recognize_google(audio_data, language="en-IN")
+            st.success(f" Heard: {query}")
+        except sr.UnknownValueError:
+            st.error(" Could not understand audio")
+            query = ""
+        except sr.RequestError as e:
+            st.error(f"Recognition error: {e}")
+            query = ""
 
-        // Dispatch input event to trigger Streamlit rerun
-        hidden_input.dispatchEvent(new Event('input', { bubbles: true }));
-    };
+    # --- Get agent response ---
+    if query:
+        prompt = f"Answer this question ONLY in the persona of Aditi Sharma: {query}"
+        answer = agent_response(prompt)
 
-    recognition.onerror = (e) => { status.innerText = 'Error: ' + e.error; }
-    recognition.onspeechend = () => { recognition.stop(); }
+        st.markdown("**Aditi says:**")
+        container = st.empty()
+        displayed = ""
 
-    status.innerText = 'Listening...';
-    recognition.start();
-}
-</script>
+        # Initialize TTS
+        engine = pyttsx3.init()
+        engine.setProperty("rate", 160)
 
-<div>
-  <button onclick="startConversation()">🎤 Start Conversation</button>
-  <span id="status" style="margin-left:12px;color:gray">Not listening</span>
-</div>
-"""
-
-components.html(voice_js, height=150)
-
-# --- Hidden input Streamlit will detect ---
-query = st.text_input("", key="voice_input_hidden", label_visibility="collapsed")
-
-# --- Auto process query ---
-if query.strip():
-    prompt = f"Answer this question ONLY in the persona of Aditi Sharma: {query}"
-    answer = agent_response(prompt)
-
-    st.markdown("**Aditi says:**")
-    container = st.empty()
-    displayed = ""
-
-    for s in answer.split(". "):
-        displayed += s.strip() + ". "
-        container.write(displayed)
-        components.html(f"""
-        <script>
-            const msg = new SpeechSynthesisUtterance({s!r});
-            msg.lang = 'en-IN';
-            window.speechSynthesis.cancel();
-            window.speechSynthesis.speak(msg);
-        </script>
-        """, height=0)
-
-    # Clear input for next round
-    st.session_state["voice_input_hidden"] = ""
+        # --- Stream sentences ---
+        sentences = answer.split(". ")
+        for s in sentences:
+            displayed += s.strip() + ". "
+            container.write(displayed)
+            engine.say(s)
+            engine.runAndWait()
