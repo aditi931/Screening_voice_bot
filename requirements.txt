@@ -1,0 +1,6 @@
+streamlit==1.26.0
+google-generativeai
+sentence-transformers==2.2.2
+scikit-learn
+numpy
+torch==2.8.0

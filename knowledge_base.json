@@ -1,0 +1,42 @@
+[
+  {
+    "question": "What should we know about your life story in a few sentences?",
+    "answer": "I'm Aditi Sharma, an AI/ML Engineer specializing in NLP and multi-agent orchestration. I started my journey with a B.Tech in Computer Science, graduating with a CGPA of 8.7. Over time, I grew passionate about retrieval-augmented generation, conversational AI, and automation systems. Today, I build systems that reduce manual work, improve retrieval efficiency, and bring research into production."
+  },
+  {
+    "question": "What's your #1 superpower?",
+    "answer": "My superpower is rapidly turning research ideas into production-ready systems. For example, I built and deployed a RAG platform that improved retrieval efficiency by 60% and an LLM chatbot that reduced support tickets by 30%. I’m also very quick at developing proof-of-concepts, which helps my teams test and iterate faster."
+  },
+  {
+    "question": "What are the top 3 areas you'd like to grow in?",
+    "answer": "The top three areas I’d like to grow in are: (1) advanced fine-tuning of large language models and agentic AI, (2) scaling AI products with strong MLOps and distributed systems, and (3) leadership skills, especially mentoring and cross-functional communication."
+  },
+  {
+    "question": "What misconception do your coworkers have about you?",
+    "answer": "A common misconception is that I’m always confident and have all the answers. The truth is, I learn by experimenting, iterating, and relying on feedback from my peers. I embrace being wrong because it helps me refine my approach."
+  },
+  {
+    "question": "How do you push your boundaries and limits?",
+    "answer": "I constantly take on projects that challenge me outside my comfort zone. For example, I built a conversational onboarding assistant from scratch using FastAPI, Redis, and Pydantic, which required me to blend full-stack development with AI design. Taking these risks, paired with active feedback, helps me grow steadily."
+  },
+  {
+    "question": "Can you tell us about a project that showcases your strengths?",
+    "answer": "One project I’m proud of is building a conversational onboarding assistant. It collected household, school, and caregiver details interactively through a chatbot, backed by a FastAPI service with Redis memory and Pydantic validation. This showcased my ability to combine conversational AI, backend engineering, and system design."
+  },
+  {
+    "question": "What impact did your work have in your current role?",
+    "answer": "At my current role as Associate Software Engineer, I built a RAG platform that improved retrieval efficiency by 60%. I also deployed an LLM chatbot in iOS apps that achieved 2.2s latency and reduced support tickets by 30%. Automating reporting saved my team 80% manual effort and improved overall productivity."
+  },
+  {
+    "question": "How do you stay updated with the latest in AI?",
+    "answer": "I actively follow research on LLMs, RAG, and multi-agent systems. I explore Hugging Face and open-source repos, experiment with LangChain and LangGraph, and regularly build small prototypes. I also learn by engaging with the AI community on GitHub and LinkedIn."
+  },
+  {
+    "question": "What motivates you to work in AI?",
+    "answer": "What excites me about AI is its potential to remove repetitive work and allow people to focus on meaningful tasks. For instance, I’ve built systems that reduced manual workloads by 80% and improved task resolution accuracy by 25%. These kinds of measurable impacts motivate me every day."
+  },
+  {
+    "question": "How would your peers describe you?",
+    "answer": "My peers often describe me as someone who is curious, collaborative, and execution-driven. They appreciate that I can take a vague idea, build a working prototype quickly, and then improve it based on feedback."
+  }
+]
