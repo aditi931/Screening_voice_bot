@@ -1,97 +1,98 @@
 """
-Streamlit app with voice support
+Streamlit app with voice support for Aditi
 """
 
 import streamlit as st
 import streamlit.components.v1 as components
 from agent import agent_response
 
-st.set_page_config(page_title="Voice RAG Bot", layout="wide")
+st.set_page_config(page_title="Aditi Voice Bot", layout="wide")
 st.title("🎙️ Aditi Sharma’s Voice Bot")
 
-# Voice input JS
+# --- Voice input JS ---
 voice_js = """
 <script>
-const startBtn = () => {
-  window.recognizedText = '';
-  const status = document.getElementById('status');
-  const output = document.getElementById('output');
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
-    status.innerText = 'Speech recognition not supported in this browser.';
-    return;
-  }
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'en-IN';   // ✅ Indian English for recognition
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-  status.innerText = 'Listening...';
-  recognition.start();
-  recognition.onresult = (event) => {
-    const text = event.results[0][0].transcript;
-    output.value = text;
-    const el = document.querySelector('textarea[data-testid="stTextArea"]');
-    if (el) { el.value = text; el.dispatchEvent(new Event('input', { bubbles: true })); }
-    status.innerText = 'Heard: ' + text;
-  };
-  recognition.onerror = (e) => { status.innerText = 'Error: ' + e.error; }
-  recognition.onspeechend = () => { recognition.stop(); }
+function startListening(){
+    const status = document.getElementById('status');
+    const output = document.getElementById('output');
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
+        status.innerText = 'Speech recognition not supported in this browser.';
+        return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    status.innerText = 'Listening...';
+    recognition.start();
+
+    recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        output.value = text;
+        const el = document.querySelector('textarea[data-testid="stTextArea"]');
+        if (el) { el.value = text; el.dispatchEvent(new Event('input', { bubbles: true })); }
+        status.innerText = 'Heard: ' + text;
+    };
+
+    recognition.onerror = (e) => { status.innerText = 'Error: ' + e.error; }
+    recognition.onspeechend = () => { recognition.stop(); }
 }
 
 function speak(text){
-  if (!('speechSynthesis' in window)) { return; }
-  const msg = new SpeechSynthesisUtterance(text);
-  msg.lang = 'en-IN';   //  Indian English accent
-  msg.pitch = 1;        // Normal pitch
-  msg.rate = 1;         // Normal speed
+    if (!('speechSynthesis' in window)) return;
 
-  // Try to pick an Indian Female voice
-  const voices = window.speechSynthesis.getVoices();
-  const indianFemale = voices.find(v => 
-    v.lang.includes('en-IN') && v.name.toLowerCase().includes('female')
-  );
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = 'en-IN';
+    msg.pitch = 1;
+    msg.rate = 1;
 
-  if (indianFemale) {
-    msg.voice = indianFemale;
-  } else {
-    // fallback to any en-IN voice if female-specific not found
-    const indianVoice = voices.find(v => v.lang.includes('en-IN'));
-    if (indianVoice) msg.voice = indianVoice;
-  }
+    const voices = window.speechSynthesis.getVoices();
+    const indianFemale = voices.find(v => v.lang.includes('en-IN') && v.name.toLowerCase().includes('female'));
+    if (indianFemale) msg.voice = indianFemale;
+    else {
+        const indianVoice = voices.find(v => v.lang.includes('en-IN'));
+        if (indianVoice) msg.voice = indianVoice;
+    }
 
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(msg);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(msg);
 }
 </script>
 
-<div>
-  <button onclick="startBtn()">Start Listening</button>
+<div style="margin-bottom:12px">
+  <button onclick="startListening()">🎤 Start Listening</button>
   <span id="status" style="margin-left:12px;color:gray">Not listening</span>
 </div>
 <textarea id="output" style="display:none"></textarea>
 """
-components.html(voice_js, height=100)
 
-query = st.text_area("Ask your question:")
+components.html(voice_js, height=120)
+
+# --- Query input ---
+query = st.text_area("Ask your question (all answers will reflect Aditi):")
 if st.button("Ask"):
     if query.strip():
-        answer = agent_response(query)
-        st.markdown("**Answer:**")
+        # Ensure the answer is always in reference to Aditi
+        prompt = f"Answer this question ONLY in the persona of Aditi Sharma: {query}"
+        answer = agent_response(prompt)
 
-        # Stream answer sentence by sentence
-        sentences = answer.split(". ")
+        st.markdown("**Answer (Aditi):**")
         container = st.empty()
         displayed = ""
 
+        # Speak and display sentence by sentence
+        sentences = answer.split(". ")
         for s in sentences:
             displayed += s.strip() + ". "
             container.write(displayed)
 
-            # Speak sentence immediately
+            # Speak each sentence via JS
             components.html(f"""
             <script>
-              var msg = new SpeechSynthesisUtterance({s!r});
-              msg.lang = 'en-US';
-              window.speechSynthesis.speak(msg);
+              speak({s!r});
             </script>
             """, height=0)
