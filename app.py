@@ -1,18 +1,16 @@
-
 import streamlit as st
 import streamlit.components.v1 as components
-from agent import agent_response  # Your LLM or RAG function
+from agent import agent_response
 
 st.set_page_config(page_title="Aditi Voice Bot", layout="wide")
-st.title("🎙️ Aditi Sharma’s Voice Bot (Fully Voice Controlled)")
+st.title("🎙️ Aditi Sharma’s Voice Bot ")
 
-# --- JS for voice recognition + auto submission + TTS ---
+# --- JS for voice recognition + auto submit + TTS ---
 voice_js = """
 <script>
 async function startConversation() {
     const status = document.getElementById('status');
-
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window')) {
         status.innerText = 'Speech recognition not supported in this browser.';
         return;
     }
@@ -27,44 +25,30 @@ async function startConversation() {
         if (!('speechSynthesis' in window)) return;
         const msg = new SpeechSynthesisUtterance(text);
         msg.lang = 'en-IN';
-        msg.pitch = 1;
-        msg.rate = 1;
         const voices = window.speechSynthesis.getVoices();
         const indianFemale = voices.find(v => v.lang.includes('en-IN') && v.name.toLowerCase().includes('female'));
         if (indianFemale) msg.voice = indianFemale;
-        else {
-            const indianVoice = voices.find(v => v.lang.includes('en-IN'));
-            if (indianVoice) msg.voice = indianVoice;
-        }
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(msg);
     };
 
-    const conversation = async () => {
-        status.innerText = 'Listening...';
-        recognition.start();
+    recognition.onresult = async (event) => {
+        const text = event.results[0][0].transcript;
+        status.innerText = 'Heard: ' + text;
 
-        recognition.onresult = async (event) => {
-            const text = event.results[0][0].transcript;
-            status.innerText = 'Heard: ' + text;
+        // Use Streamlit events: find the hidden input by id
+        const hidden_input = document.getElementById('voice_input_hidden');
+        hidden_input.value = text;
 
-            // Send text to Streamlit via textarea (auto submit)
-            const textarea = document.querySelector('textarea[data-testid="stTextArea"]');
-            if (textarea) {
-                textarea.value = text;
-                textarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-
-            // Trigger Streamlit rerun
-            const submitBtn = document.querySelector('button[kind="primary"]');
-            if (submitBtn) submitBtn.click();
-        };
-
-        recognition.onerror = (e) => { status.innerText = 'Error: ' + e.error; }
-        recognition.onspeechend = () => { recognition.stop(); }
+        // Dispatch input event to trigger Streamlit rerun
+        hidden_input.dispatchEvent(new Event('input', { bubbles: true }));
     };
 
-    conversation();
+    recognition.onerror = (e) => { status.innerText = 'Error: ' + e.error; }
+    recognition.onspeechend = () => { recognition.stop(); }
+
+    status.innerText = 'Listening...';
+    recognition.start();
 }
 </script>
 
@@ -72,17 +56,15 @@ async function startConversation() {
   <button onclick="startConversation()">🎤 Start Conversation</button>
   <span id="status" style="margin-left:12px;color:gray">Not listening</span>
 </div>
-<textarea id="voice_input" style="display:none"></textarea>
 """
 
 components.html(voice_js, height=150)
 
-# --- Hidden text area to receive JS input ---
-query = st.text_area("Voice input (auto submitted)", key="voice_input")
+# --- Hidden input Streamlit will detect ---
+query = st.text_input("", key="voice_input_hidden", label_visibility="collapsed")
 
-# --- Process the query automatically ---
+# --- Auto process query ---
 if query.strip():
-    # Force all answers to Aditi persona
     prompt = f"Answer this question ONLY in the persona of Aditi Sharma: {query}"
     answer = agent_response(prompt)
 
@@ -90,13 +72,9 @@ if query.strip():
     container = st.empty()
     displayed = ""
 
-    # Display and speak sentence by sentence
-    sentences = answer.split(". ")
-    for s in sentences:
+    for s in answer.split(". "):
         displayed += s.strip() + ". "
         container.write(displayed)
-
-        # Speak each sentence
         components.html(f"""
         <script>
             const msg = new SpeechSynthesisUtterance({s!r});
@@ -106,5 +84,5 @@ if query.strip():
         </script>
         """, height=0)
 
-    # Clear the query for next input
-    st.session_state["voice_input"] = ""
+    # Clear input for next round
+    st.session_state["voice_input_hidden"] = ""
